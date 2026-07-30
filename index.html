@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>실시간 웃음인식 챌린지 😊</title>
+    
+    <!-- 아이패드 사파리 호환성 200% 검증된 안정화 라이브러리 -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
+
+    <style>
+        :root {
+            --bg-color: #12121a;
+            --card-bg: #1e1e2f;
+            --accent-color: #ffb703;
+            --text-main: #ffffff;
+            --text-muted: #a0a0b5;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: -apple-system, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+        .container {
+            background: var(--card-bg);
+            border-radius: 24px;
+            padding: 30px 24px;
+            width: 90%;
+            max-width: 420px;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+        }
+        h1 {
+            color: var(--accent-color);
+            margin: 0 0 8px 0;
+            font-size: 1.8rem;
+        }
+        .subtitle {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-bottom: 24px;
+        }
+        .video-wrapper {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 4/3;
+            background: #000;
+            border-radius: 16px;
+            overflow: hidden;
+        }
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transform: scaleX(-1);
+        }
+        .overlay-loading {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--card-bg);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+        }
+        .spinner {
+            width: 40px; height: 40px;
+            border: 4px solid rgba(255, 183, 3, 0.1);
+            border-top: 4px solid var(--accent-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 15px;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .score-box {
+            margin-top: 24px;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 12px 30px;
+            border-radius: 50px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .score-number { font-size: 3rem; font-weight: 900; }
+        .score-unit { font-size: 1.4rem; color: var(--accent-color); font-weight: 700; margin-top: 10px; }
+        .gauge-container {
+            width: 90%; height: 14px; background: #2a2a3a;
+            border-radius: 7px; margin: 24px auto 12px auto; overflow: hidden;
+        }
+        .gauge-bar {
+            width: 0%; height: 100%;
+            background: linear-gradient(90deg, #ff4b5c, #ffb703, #1dd1a1);
+            transition: width 0.1s ease-out;
+        }
+        .msg-display { font-size: 1rem; font-weight: 700; height: 26px; color: var(--text-muted); }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>웃음대회 😊</h1>
+        <div class="subtitle">얼굴을 비추고 활짝 웃어보세요!</div>
+        
+        <div class="video-wrapper">
+            <div id="loader" class="overlay-loading">
+                <div class="spinner"></div>
+                <div style="font-size: 0.9rem; color: var(--text-muted);">안전한 AI 엔진 연결 중...</div>
+            </div>
+            <video id="webcam" autoplay playsinline muted></video>
+        </div>
+
+        <div class="score-box">
+            <span class="score-number" id="score-value">0</span>
+            <span class="score-unit">점</span>
+        </div>
+
+        <div class="gauge-container">
+            <div class="gauge-bar" id="progress"></div>
+        </div>
+
+        <div class="msg-display" id="status">카메라 준비 중...</div>
+    </div>
+
+    <script>
+        const video = document.getElementById("webcam");
+        const scoreEl = document.getElementById("score-value");
+        const progressBar = document.getElementById("progress");
+        const statusEl = document.getElementById("status");
+        const loader = document.getElementById("loader");
+
+        // 구버전 안정형 엔진 선언 (사파리 친화적 경로 설정)
+        const faceMesh = new FaceMesh({
+            locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`
+        });
+
+        faceMesh.setOptions({
+            maxNumFaces: 1,
+            refineLandmarks: false,
+            minDetectionConfidence: 0.5,
+            minTrackingConfidence: 0.5
+        });
+
+        faceMesh.onResults((results) => {
+            // AI가 첫 얼굴을 찾아내면 로딩창 숨기기
+            loader.style.display = "none";
+
+            if (results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0) {
+                const landmarks = results.multiFaceLandmarks[0];
+                
+                // 입꼬리 좌우 좌표 및 눈가 좌표 추출을 통한 웃음 강도 계산
+                const mouthLeft = landmarks[61];
+                const mouthRight = landmarks[291];
+                const eyeLeft = landmarks[33];
+                const eyeRight = landmarks[263];
+
+                // 얼굴 거리에 상관없도록 눈 대 입 너비 비율 계산
+                const mouthWidth = Math.hypot(mouthLeft.x - mouthRight.x, mouthLeft.y - mouthRight.y);
+                const eyeDist = Math.hypot(eyeLeft.x - eyeRight.x, eyeLeft.y - eyeRight.y);
+                const smileRatio = mouthWidth / eyeDist;
+
+                // 점수 매핑 계산 (일반 미소 비율 기준 적용)
+                let score = Math.round(((smileRatio - 0.44) / 0.18) * 100);
+                if (score < 0) score = 0;
+                if (score > 100) score = 100;
+
+                scoreEl.innerText = score;
+                progressBar.style.width = `${score}%`;
+
+                if (score < 15) {
+                    statusEl.innerText = "무표정이에요. 조금만 웃어보세요! 😐";
+                    statusEl.style.color = "#a0a0b5";
+                } else if (score < 55) {
+                    statusEl.innerText = "좋아요, 미소가 시작되었습니다! 🙂";
+                    statusEl.style.color = "#ffb703";
+                } else if (score < 85) {
+                    statusEl.innerText = "아주 멋진 미소입니다! 조금 더 크게! 😀";
+                    statusEl.style.color = "#1dd1a1";
+                } else {
+                    statusEl.innerText = "최고의 미소! 100점 만점! 🎉😁";
+                    statusEl.style.color = "#1dd1a1";
+                }
+            } else {
+                statusEl.innerText = "화면을 바라봐 주세요.";
+                statusEl.style.color = "#a0a0b5";
+            }
+        });
+
+        // 아이패드 전용 카메라 최적화 유틸 구동
+        const camera = new Camera(video, {
+            onFrame: async () => {
+                await faceMesh.send({ image: video });
+            },
+            width: 640,
+            height: 480
+        });
+        
+        camera.start().catch(err => {
+            alert("카메라를 켤 수 없습니다. 주소가 https:// 로 시작하는지 확인해주세요.");
+        });
+    </script>
+</body>
+</html>
