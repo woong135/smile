@@ -76,13 +76,13 @@
 <body>
 
     <div class="container">
-        <h1>웃음대회 😊</h1>
-        <div class="subtitle">얼굴을 비추고 활짝 웃어보세요!</div>
+        <h1>웃음대회 챌린지 😈</h1>
+        <div class="subtitle">어설픈 미소는 통하지 않는 핵매운맛 모드!</div>
         
         <div class="video-wrapper">
             <div id="loader" class="overlay-loading">
                 <div class="spinner"></div>
-                <div style="font-size: 0.9rem; color: var(--text-muted);">AI 엔진 구동 중...</div>
+                <div style="font-size: 0.9rem; color: var(--text-muted);">보안 AI 엔진 구동 중...</div>
             </div>
             <video id="webcam" autoplay playsinline muted></video>
         </div>
@@ -100,14 +100,6 @@
     </div>
 
     <script>
-        // ==========================================
-        // 🛠️ [여기서 난이도를 조절하세요!]
-        // 1.0 = 보통 난이도 (기존보다 조금 더 웃어야 함)
-        // 1.5 = 매운맛 (눈 없어지고 입을 크게 벌려야 100점)
-        // 2.0 = 지옥맛 (광대가 터질 정도로 온 얼굴로 박장대소해야 100점)
-        // ==========================================
-        const DIFFICULTY_FACTOR = 1.6; 
-
         const video = document.getElementById("webcam");
         const scoreEl = document.getElementById("score-value");
         const progressBar = document.getElementById("progress");
@@ -121,8 +113,8 @@
         faceMesh.setOptions({
             maxNumFaces: 1,
             refineLandmarks: false,
-            minDetectionConfidence: 0.5,
-            minTrackingConfidence: 0.5
+            minDetectionConfidence: 0.6,
+            minTrackingConfidence: 0.6
         });
 
         faceMesh.onResults((results) => {
@@ -131,57 +123,56 @@
             if (results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0) {
                 const landmarks = results.multiFaceLandmarks[0];
                 
-                // 얼굴의 주요 좌표 추출
                 const mouthLeft = landmarks[61];
                 const mouthRight = landmarks[291];
                 const eyeLeft = landmarks[33];
                 const eyeRight = landmarks[263];
 
-                // 입 너비와 눈 사이 거리 비율 계산 (얼굴이 다가와도 일정한 점수 유지)
                 const mouthWidth = Math.hypot(mouthLeft.x - mouthRight.x, mouthLeft.y - mouthRight.y);
                 const eyeDist = Math.hypot(eyeLeft.x - eyeRight.x, eyeLeft.y - eyeRight.y);
                 const smileRatio = mouthWidth / eyeDist;
 
-                // [난이도 알고리즘 적용]
-                // 기본 무표정 기준점을 0.46으로 높이고, 100점에 도달하는 범위를 난이도 인자로 대폭 넓혔습니다.
-                let score = Math.round(((smileRatio - 0.46) / (0.13 * DIFFICULTY_FACTOR)) * 100);
+                // =======================================================
+                // 🛠️ [핵매운맛 알고리즘 핵심 변경]
+                // 1. 컷트라인 상향: 기존 0.46에서 0.49로 베이스를 대폭 올림 (무표정 방어)
+                // 2. 비선형(제곱) 스케일링: 중간까지는 점수가 기어 다니게 설계
+                // =======================================================
+                let rawProgress = (smileRatio - 0.49) / 0.25; 
                 
-                if (score < 0) score = 0;
-                if (score > 100) score = 100;
+                if (rawProgress < 0) rawProgress = 0;
+                if (rawProgress > 1) rawProgress = 1;
+
+                // 제곱 계산 적용 (예: 진행도가 50%일 때, 기존엔 50점이었으나 이제는 25점이 됨)
+                let score = Math.round(Math.pow(rawProgress, 2) * 100);
 
                 scoreEl.innerText = score;
                 progressBar.style.width = `${score}%`;
 
-                // 점수별 멘트 변경
-                if (score < 20) {
-                    statusEl.innerText = "정색은 금지! 미소를 지어보세요 😐";
+                // 점수별 멘트 리액션
+                if (score < 15) {
+                    statusEl.innerText = "웃으세요! 꼼수는 통하지 않습니다 😐";
                     statusEl.style.color = "#a0a0b5";
-                } else if (score < 60) {
-                    statusEl.innerText = "더 크게 웃으셔야 점수가 올라갑니다! 🙂";
+                } else if (score < 50) {
+                    statusEl.innerText = "겨우 그 정도로 100점을 바라면 오산! 🙂";
                     statusEl.style.color = "#ffb703";
-                } else if (score < 95) {
-                    statusEl.innerText = "좋아요! 광대를 더 폭발시켜 보세요! 😀";
+                } else if (score < 88) {
+                    statusEl.innerText = "더 찢으세요! 광대 터지도록 박장대소! 😀";
                     statusEl.style.color = "#1dd1a1";
                 } else {
-                    statusEl.innerText = "인정합니다! 최고의 미소 100점! 🎉😁";
+                    statusEl.innerText = "지옥 모드 격파! 진정한 웃음의 왕! 🎉👑";
                     statusEl.style.color = "#1dd1a1";
                 }
             } else {
-                statusEl.innerText = "화면을 바라봐 주세요.";
+                statusEl.innerText = "화면을 제대로 바라봐 주세요.";
                 statusEl.style.color = "#a0a0b5";
             }
         });
 
         const camera = new Camera(video, {
-            onFrame: async () => {
-                await faceMesh.send({ image: video });
-            },
-            width: 640,
-            height: 480
+            onFrame: async () => { await faceMesh.send({ image: video }); },
+            width: 640, height: 480
         });
-        camera.start().catch(err => {
-            alert("카메라를 켤 수 없습니다.");
-        });
+        camera.start().catch(err => { alert("카메라를 켤 수 없습니다."); });
     </script>
 </body>
 </html>
