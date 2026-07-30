@@ -11,11 +11,11 @@
 
     <style>
         :root {
-            --bg-color: #12121a;
-            --card-bg: #1e1e2f;
-            --accent-color: #ffb703;
+            --bg-color: #0d0d13;
+            --card-bg: #161622;
+            --accent-color: #ff3e3e; /* 난이도 상승에 따른 경고의 레드 테마 */
             --text-main: #ffffff;
-            --text-muted: #a0a0b5;
+            --text-muted: #8e8e9f;
         }
         body {
             margin: 0; padding: 0;
@@ -32,10 +32,11 @@
             padding: 30px 24px;
             width: 90%; max-width: 420px;
             text-align: center;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+            border: 1px solid rgba(255, 62, 62, 0.1);
         }
-        h1 { color: var(--accent-color); margin: 0 0 8px 0; font-size: 1.8rem; }
-        .subtitle { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 24px; }
+        h1 { color: #ffb703; margin: 0 0 8px 0; font-size: 1.8rem; }
+        .subtitle { color: #ff3e3e; font-size: 0.9rem; margin-bottom: 24px; font-weight: bold; }
         .video-wrapper {
             position: relative; width: 100%; aspect-ratio: 4/3;
             background: #000; border-radius: 16px; overflow: hidden;
@@ -48,27 +49,28 @@
         }
         .spinner {
             width: 40px; height: 40px;
-            border: 4px solid rgba(255, 183, 3, 0.1);
+            border: 4px solid rgba(255, 62, 62, 0.1);
             border-top: 4px solid var(--accent-color);
             border-radius: 50%;
             animation: spin 1s linear infinite; margin-bottom: 15px;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         .score-box {
-            margin-top: 24px; background: rgba(0, 0, 0, 0.2);
+            margin-top: 24px; background: rgba(0, 0, 0, 0.4);
             padding: 12px 30px; border-radius: 50px;
             display: inline-flex; align-items: center; gap: 8px;
+            border: 1px solid rgba(255, 62, 62, 0.2);
         }
-        .score-number { font-size: 3rem; font-weight: 900; }
-        .score-unit { font-size: 1.4rem; color: var(--accent-color); font-weight: 700; margin-top: 10px; }
+        .score-number { font-size: 3rem; font-weight: 900; color: #ffffff; }
+        .score-unit { font-size: 1.4rem; color: #ffb703; font-weight: 700; margin-top: 10px; }
         .gauge-container {
-            width: 90%; height: 14px; background: #2a2a3a;
+            width: 90%; height: 14px; background: #1a1a26;
             border-radius: 7px; margin: 24px auto 12px auto; overflow: hidden;
         }
         .gauge-bar {
             width: 0%; height: 100%;
-            background: linear-gradient(90deg, #ff4b5c, #ffb703, #1dd1a1);
-            transition: width 0.1s ease-out;
+            background: linear-gradient(90deg, #ff3e3e, #ffb703, #1dd1a1);
+            transition: width 0.08s ease-out;
         }
         .msg-display { font-size: 1rem; font-weight: 700; height: 26px; color: var(--text-muted); }
     </style>
@@ -76,13 +78,13 @@
 <body>
 
     <div class="container">
-        <h1>웃음대회 챌린지 😈</h1>
-        <div class="subtitle">어설픈 미소는 통하지 않는 핵매운맛 모드!</div>
+        <h1>웃음대회 챌린지 💀</h1>
+        <div class="subtitle">※ 경고: 3배 더 어려워진 신(God) 모드</div>
         
         <div class="video-wrapper">
             <div id="loader" class="overlay-loading">
                 <div class="spinner"></div>
-                <div style="font-size: 0.9rem; color: var(--text-muted);">보안 AI 엔진 구동 중...</div>
+                <div style="font-size: 0.9rem; color: var(--text-muted);">초고정밀 AI 엔진 구동 중...</div>
             </div>
             <video id="webcam" autoplay playsinline muted></video>
         </div>
@@ -133,38 +135,41 @@
                 const smileRatio = mouthWidth / eyeDist;
 
                 // =======================================================
-                // 🛠️ [핵매운맛 알고리즘 핵심 변경]
-                // 1. 컷트라인 상향: 기존 0.46에서 0.49로 베이스를 대폭 올림 (무표정 방어)
-                // 2. 비선형(제곱) 스케일링: 중간까지는 점수가 기어 다니게 설계
+                // 💀 [신 모드: 지옥의 3배 매운맛 핵심 알고리즘]
+                // 1. 최소 컷트라인 0.54로 초상향 (일반적인 미소는 무조건 0점 처리)
+                // 2. 4제곱(Quartic) 초압축 공식 적용
                 // =======================================================
-                let rawProgress = (smileRatio - 0.49) / 0.25; 
+                let rawProgress = (smileRatio - 0.54) / 0.26; 
                 
                 if (rawProgress < 0) rawProgress = 0;
                 if (rawProgress > 1) rawProgress = 1;
 
-                // 제곱 계산 적용 (예: 진행도가 50%일 때, 기존엔 50점이었으나 이제는 25점이 됨)
-                let score = Math.round(Math.pow(rawProgress, 2) * 100);
+                // 4제곱 연산으로 극적인 난이도 상향
+                let score = Math.round(Math.pow(rawProgress, 4) * 100);
 
                 scoreEl.innerText = score;
                 progressBar.style.width = `${score}%`;
 
-                // 점수별 멘트 리액션
-                if (score < 15) {
-                    statusEl.innerText = "웃으세요! 꼼수는 통하지 않습니다 😐";
-                    statusEl.style.color = "#a0a0b5";
-                } else if (score < 50) {
-                    statusEl.innerText = "겨우 그 정도로 100점을 바라면 오산! 🙂";
+                // 극악의 난이도에 맞춘 멘트 변경
+                if (score < 5) {
+                    statusEl.innerText = "그건 미소일 뿐입니다. 0점! 😐";
+                    statusEl.style.color = "#8e8e9f";
+                } else if (score < 30) {
+                    statusEl.innerText = "얼굴 근육을 더 쓰셔야 반응합니다! 🙂";
+                    statusEl.style.color = "#ff3e3e";
+                } else if (score < 75) {
+                    statusEl.innerText = "좋아요! 더 망가져야 점수가 오릅니다! 무너지세요! 😀";
                     statusEl.style.color = "#ffb703";
-                } else if (score < 88) {
-                    statusEl.innerText = "더 찢으세요! 광대 터지도록 박장대소! 😀";
+                } else if (score < 99) {
+                    statusEl.innerText = "거의 다 왔습니다! 온 힘을 다해 박장대소!! 😆";
                     statusEl.style.color = "#1dd1a1";
                 } else {
-                    statusEl.innerText = "지옥 모드 격파! 진정한 웃음의 왕! 🎉👑";
+                    statusEl.innerText = "기적 발생! 신의 미소 100점 쟁취! 🎉👑";
                     statusEl.style.color = "#1dd1a1";
                 }
             } else {
                 statusEl.innerText = "화면을 제대로 바라봐 주세요.";
-                statusEl.style.color = "#a0a0b5";
+                statusEl.style.color = "#8e8e9f";
             }
         });
 
