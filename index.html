@@ -13,7 +13,7 @@
         :root {
             --bg-color: #0d0d13;
             --card-bg: #161622;
-            --accent-color: #ff3e3e; /* 난이도 상승에 따른 경고의 레드 테마 */
+            --accent-color: #ff3e3e;
             --text-main: #ffffff;
             --text-muted: #8e8e9f;
         }
@@ -36,12 +36,14 @@
             border: 1px solid rgba(255, 62, 62, 0.1);
         }
         h1 { color: #ffb703; margin: 0 0 8px 0; font-size: 1.8rem; }
-        .subtitle { color: #ff3e3e; font-size: 0.9rem; margin-bottom: 24px; font-weight: bold; }
+        .subtitle { color: #ff3e3e; font-size: 0.9rem; margin-bottom: 20px; font-weight: bold; }
+        
         .video-wrapper {
             position: relative; width: 100%; aspect-ratio: 4/3;
             background: #000; border-radius: 16px; overflow: hidden;
         }
         video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+        
         .overlay-loading {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: var(--card-bg); display: flex; flex-direction: column;
@@ -55,24 +57,69 @@
             animation: spin 1s linear infinite; margin-bottom: 15px;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .score-box {
-            margin-top: 24px; background: rgba(0, 0, 0, 0.4);
-            padding: 12px 30px; border-radius: 50px;
-            display: inline-flex; align-items: center; gap: 8px;
-            border: 1px solid rgba(255, 62, 62, 0.2);
+        
+        /* 점수판 레이아웃 (현재 점수 vs 최고 기록) */
+        .score-display-container {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            margin-top: 20px;
         }
-        .score-number { font-size: 3rem; font-weight: 900; color: #ffffff; }
-        .score-unit { font-size: 1.4rem; color: #ffb703; font-weight: 700; margin-top: 10px; }
+        .score-box {
+            flex: 1;
+            background: rgba(0, 0, 0, 0.4);
+            padding: 10px 15px;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .score-box.highlight {
+            border: 1px solid rgba(255, 183, 3, 0.4);
+            background: rgba(255, 183, 3, 0.05);
+        }
+        .score-label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+        }
+        .score-box.highlight .score-label {
+            color: #ffb703;
+            font-weight: bold;
+        }
+        .score-number { font-size: 2.3rem; font-weight: 900; color: #ffffff; }
+        .score-unit { font-size: 1.1rem; color: #ffb703; font-weight: 700; }
+        
         .gauge-container {
-            width: 90%; height: 14px; background: #1a1a26;
-            border-radius: 7px; margin: 24px auto 12px auto; overflow: hidden;
+            width: 100%; height: 12px; background: #1a1a26;
+            border-radius: 6px; margin: 20px auto 12px auto; overflow: hidden;
         }
         .gauge-bar {
             width: 0%; height: 100%;
             background: linear-gradient(90deg, #ff3e3e, #ffb703, #1dd1a1);
             transition: width 0.08s ease-out;
         }
-        .msg-display { font-size: 1rem; font-weight: 700; height: 26px; color: var(--text-muted); }
+        .msg-display { font-size: 0.95rem; font-weight: 700; height: 26px; color: var(--text-muted); margin-bottom: 15px; }
+        
+        /* 리셋 버튼 스타일 */
+        .btn-reset {
+            width: 100%;
+            background: #ffb703;
+            color: #0d0d13;
+            border: none;
+            padding: 12px;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(255, 183, 3, 0.3);
+            transition: background 0.2s;
+            -webkit-tap-highlight-color: transparent; /* 아이패드 터치 잔상 제거 */
+        }
+        .btn-reset:active {
+            background: #e09f00;
+        }
     </style>
 </head>
 <body>
@@ -89,9 +136,22 @@
             <video id="webcam" autoplay playsinline muted></video>
         </div>
 
-        <div class="score-box">
-            <span class="score-number" id="score-value">0</span>
-            <span class="score-unit">점</span>
+        <!-- 듀얼 점수판 영역 -->
+        <div class="score-display-container">
+            <div class="score-box">
+                <span class="score-label">실시간 점수</span>
+                <div>
+                    <span class="score-number" id="score-value">0</span>
+                    <span class="score-unit">점</span>
+                </div>
+            </div>
+            <div class="score-box highlight">
+                <span class="score-label">🔥 최고 기록</span>
+                <div>
+                    <span class="score-number" id="max-score-value">0</span>
+                    <span class="score-unit">점</span>
+                </div>
+            </div>
         </div>
 
         <div class="gauge-container">
@@ -99,14 +159,21 @@
         </div>
 
         <div class="msg-display" id="status">카메라 준비 중...</div>
+
+        <!-- 다음 사람을 위한 리셋 버튼 -->
+        <button class="btn-reset" id="btn-next">다음 사람 시작하기 🔄</button>
     </div>
 
     <script>
         const video = document.getElementById("webcam");
         const scoreEl = document.getElementById("score-value");
+        const maxScoreEl = document.getElementById("max-score-value");
         const progressBar = document.getElementById("progress");
         const statusEl = document.getElementById("status");
         const loader = document.getElementById("loader");
+        const nextBtn = document.getElementById("btn-next");
+
+        let maxScore = 0; // 현재 도전자의 최고 기록 저장 변수
 
         const faceMesh = new FaceMesh({
             locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`
@@ -134,23 +201,25 @@
                 const eyeDist = Math.hypot(eyeLeft.x - eyeRight.x, eyeLeft.y - eyeRight.y);
                 const smileRatio = mouthWidth / eyeDist;
 
-                // =======================================================
-                // 💀 [신 모드: 지옥의 3배 매운맛 핵심 알고리즘]
-                // 1. 최소 컷트라인 0.54로 초상향 (일반적인 미소는 무조건 0점 처리)
-                // 2. 4제곱(Quartic) 초압축 공식 적용
-                // =======================================================
+                // 지옥의 3배 매운맛 알고리즘 유지 (4제곱)
                 let rawProgress = (smileRatio - 0.54) / 0.26; 
                 
                 if (rawProgress < 0) rawProgress = 0;
                 if (rawProgress > 1) rawProgress = 1;
 
-                // 4제곱 연산으로 극적인 난이도 상향
                 let score = Math.round(Math.pow(rawProgress, 4) * 100);
 
+                // 1. 실시간 점수 표기
                 scoreEl.innerText = score;
                 progressBar.style.width = `${score}%`;
 
-                // 극악의 난이도에 맞춘 멘트 변경
+                // 2. 최고 기록 갱신 로직 (역대급 기록 박제)
+                if (score > maxScore) {
+                    maxScore = score;
+                    maxScoreEl.innerText = maxScore;
+                }
+
+                // 멘트 기준은 '최고 기록'이 아닌 '실시간 표정 강도' 기준
                 if (score < 5) {
                     statusEl.innerText = "그건 미소일 뿐입니다. 0점! 😐";
                     statusEl.style.color = "#8e8e9f";
@@ -158,7 +227,7 @@
                     statusEl.innerText = "얼굴 근육을 더 쓰셔야 반응합니다! 🙂";
                     statusEl.style.color = "#ff3e3e";
                 } else if (score < 75) {
-                    statusEl.innerText = "좋아요! 더 망가져야 점수가 오릅니다! 무너지세요! 😀";
+                    statusEl.innerText = "무너지세요! 더 망가져야 오릅니다! 😀";
                     statusEl.style.color = "#ffb703";
                 } else if (score < 99) {
                     statusEl.innerText = "거의 다 왔습니다! 온 힘을 다해 박장대소!! 😆";
@@ -171,6 +240,16 @@
                 statusEl.innerText = "화면을 제대로 바라봐 주세요.";
                 statusEl.style.color = "#8e8e9f";
             }
+        });
+
+        // 다음 사람을 위해 최고점수 초기화 버튼 이벤트
+        nextBtn.addEventListener("click", () => {
+            maxScore = 0;
+            maxScoreEl.innerText = "0";
+            scoreEl.innerText = "0";
+            progressBar.style.width = "0%";
+            statusEl.innerText = "새로운 도전자! 준비하시고 웃으세요!";
+            statusEl.style.color = "#ffb703";
         });
 
         const camera = new Camera(video, {
