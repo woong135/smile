@@ -28,7 +28,6 @@
             box-sizing: border-box;
         }
         
-        /* 1. 카메라 확대를 위해 컨테이너 최대 크기를 650px로 대폭 확장 */
         .container {
             background: var(--card-bg);
             border-radius: 24px;
@@ -85,7 +84,6 @@
         .score-label { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 4px; }
         .score-box.highlight .score-label { color: var(--accent-color); font-weight: bold; }
         
-        /* 3자리 점수(999점) 표기를 위해 폰트 굵기 강화 및 고정폭 설정 */
         .score-number { 
             font-size: 2.8rem; 
             font-weight: 900; 
@@ -119,7 +117,7 @@
 
     <div class="container">
         <h1>웃음대회 챌린지 👑</h1>
-        <div class="subtitle">🔥 신의 영역: 999점 만점 돌파 챌린지</div>
+        <div class="subtitle">🔥 신의 영역: 999점 절대 유지 챌린지</div>
         
         <div class="video-wrapper">
             <div id="loader" class="overlay-loading">
@@ -165,6 +163,7 @@
         const nextBtn = document.getElementById("btn-next");
 
         let maxScore = 0;
+        let currentSmoothedScore = 0; // 부드러운 점수 상승을 위한 변수
 
         const faceMesh = new FaceMesh({
             locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`
@@ -185,25 +184,34 @@
                 
                 const mouthLeft = landmarks[61];
                 const mouthRight = landmarks[291];
+                const mouthTop = landmarks[13];     // 윗입술 안쪽 중앙
+                const mouthBottom = landmarks[14];  // 아랫입술 안쪽 중앙
                 const eyeLeft = landmarks[33];
                 const eyeRight = landmarks[263];
 
                 const mouthWidth = Math.hypot(mouthLeft.x - mouthRight.x, mouthLeft.y - mouthRight.y);
+                const mouthHeight = Math.hypot(mouthTop.x - mouthBottom.x, mouthTop.y - mouthBottom.y);
                 const eyeDist = Math.hypot(eyeLeft.x - eyeRight.x, eyeLeft.y - eyeRight.y);
-                const smileRatio = mouthWidth / eyeDist;
 
-                // =======================================================
-                // 💀 [999점 만점 5제곱 극악 알고리즘]
-                // 1. 최소 컷트라인 0.55로 초상향 (살짝 웃으면 아예 무반응)
-                // 2. 진행도를 5제곱하여 999점을 곱해 점수 산출
-                // =======================================================
-                let rawProgress = (smileRatio - 0.55) / 0.25; 
+                const smileRatio = mouthWidth / eyeDist; // 가로 미소 비율 (평균 0.45 ~ 0.75)
+                const openRatio = mouthHeight / eyeDist;  // 세로 입벌림 비율 (평균 0.0 ~ 0.35)
+
+                // [가로 웃음 55% + 세로 입벌림 45%] 비율로 융합연산
+                let combinedTarget = (smileRatio * 0.55) + (openRatio * 0.45); 
                 
+                // 컷트라인 대폭 상향조정 (무표정 방어선 0.33)
+                let rawProgress = (combinedTarget - 0.33) / 0.25; 
                 if (rawProgress < 0) rawProgress = 0;
                 if (rawProgress > 1) rawProgress = 1;
 
-                // 5제곱 연산 후 999점 만점으로 팽창
-                let score = Math.round(Math.pow(rawProgress, 5) * 999);
+                // 5제곱 극악 연산 후 999점 환산
+                let targetScore = Math.round(Math.pow(rawProgress, 5) * 999);
+
+                // 💡 [핵심 수식] 댐핑 필터 적용: 순간적으로 999점이 튀는 걸 완벽 차단!
+                // 현재 점수에서 목표 점수까지 매 프레임 15%씩만 접근하도록 조절 (약 0.7초 유지 필수)
+                currentSmoothedScore = (currentSmoothedScore * 0.85) + (targetScore * 0.15);
+                let score = Math.round(currentSmoothedScore);
+                if (score > 999) score = 999;
 
                 scoreEl.innerText = score;
                 progressBar.style.width = `${(score / 999) * 100}%`;
@@ -213,21 +221,21 @@
                     maxScoreEl.innerText = maxScore;
                 }
 
-                // 999점 기준 난이도별 멘트 배정
-                if (score < 50) {
-                    statusEl.innerText = "어설픈 미소는 0점 처리됩니다! 😐";
+                // 999점 난이도 기준 리액션 멘트
+                if (score < 80) {
+                    statusEl.innerText = "입을 위아래로 더 크게 벌려 웃으세요! 😐";
                     statusEl.style.color = "#8e8e9f";
-                } else if (score < 350) {
-                    statusEl.innerText = "겨우 300점 대? 얼굴 근육을 대폭 쓰세요! 🙂";
+                } else if (score < 400) {
+                    statusEl.innerText = "미소는 통하지 않습니다. 박장대소 하세요! 🙂";
                     statusEl.style.color = "#ff3e3e";
                 } else if (score < 750) {
-                    statusEl.innerText = "좋습니다! 더 격렬하게 망가지세요! 😀";
+                    statusEl.innerText = "좋습니다! 표정을 더 우스꽝스럽게 파격적으로! 😀";
                     statusEl.style.color = "#ffb703";
-                } else if (score < 990) {
-                    statusEl.innerText = "대박! 조금만 더! 온 우주의 기운을 모아 박장대소!! 😆";
+                } else if (score < 980) {
+                    statusEl.innerText = "우와아아! 그 표정을 유지하세요!! 버텨야 올라갑니다! 😆";
                     statusEl.style.color = "#1dd1a1";
                 } else {
-                    statusEl.innerText = "신화 창조! 전설의 999점 만점 격파! 🎉👑";
+                    statusEl.innerText = "전설 달성! 진정한 대폭소의 왕 999점! 🎉👑";
                     statusEl.style.color = "#1dd1a1";
                 }
             } else {
@@ -238,6 +246,7 @@
 
         nextBtn.addEventListener("click", () => {
             maxScore = 0;
+            currentSmoothedScore = 0;
             maxScoreEl.innerText = "0";
             scoreEl.innerText = "0";
             progressBar.style.width = "0%";
