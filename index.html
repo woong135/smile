@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>실시간 웃음인식 챌린지 😊</title>
     
-    <!-- 아이패드 사파리 호환성 200% 검증된 안정화 라이브러리 -->
+    <!-- 아이패드 사파리 호환성 검증 라이브러리 -->
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
 
@@ -18,77 +18,46 @@
             --text-muted: #a0a0b5;
         }
         body {
-            margin: 0;
-            padding: 0;
+            margin: 0; padding: 0;
             background-color: var(--bg-color);
             color: var(--text-main);
             font-family: -apple-system, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
             min-height: 100vh;
         }
         .container {
             background: var(--card-bg);
             border-radius: 24px;
             padding: 30px 24px;
-            width: 90%;
-            max-width: 420px;
+            width: 90%; max-width: 420px;
             text-align: center;
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
         }
-        h1 {
-            color: var(--accent-color);
-            margin: 0 0 8px 0;
-            font-size: 1.8rem;
-        }
-        .subtitle {
-            color: var(--text-muted);
-            font-size: 0.9rem;
-            margin-bottom: 24px;
-        }
+        h1 { color: var(--accent-color); margin: 0 0 8px 0; font-size: 1.8rem; }
+        .subtitle { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 24px; }
         .video-wrapper {
-            position: relative;
-            width: 100%;
-            aspect-ratio: 4/3;
-            background: #000;
-            border-radius: 16px;
-            overflow: hidden;
+            position: relative; width: 100%; aspect-ratio: 4/3;
+            background: #000; border-radius: 16px; overflow: hidden;
         }
-        video {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            transform: scaleX(-1);
-        }
+        video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
         .overlay-loading {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: var(--card-bg);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            z-index: 10;
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--card-bg); display: flex; flex-direction: column;
+            align-items: center; justify-content: center; z-index: 10;
         }
         .spinner {
             width: 40px; height: 40px;
             border: 4px solid rgba(255, 183, 3, 0.1);
             border-top: 4px solid var(--accent-color);
             border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-bottom: 15px;
+            animation: spin 1s linear infinite; margin-bottom: 15px;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         .score-box {
-            margin-top: 24px;
-            background: rgba(0, 0, 0, 0.2);
-            padding: 12px 30px;
-            border-radius: 50px;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
+            margin-top: 24px; background: rgba(0, 0, 0, 0.2);
+            padding: 12px 30px; border-radius: 50px;
+            display: inline-flex; align-items: center; gap: 8px;
         }
         .score-number { font-size: 3rem; font-weight: 900; }
         .score-unit { font-size: 1.4rem; color: var(--accent-color); font-weight: 700; margin-top: 10px; }
@@ -113,7 +82,7 @@
         <div class="video-wrapper">
             <div id="loader" class="overlay-loading">
                 <div class="spinner"></div>
-                <div style="font-size: 0.9rem; color: var(--text-muted);">안전한 AI 엔진 연결 중...</div>
+                <div style="font-size: 0.9rem; color: var(--text-muted);">AI 엔진 구동 중...</div>
             </div>
             <video id="webcam" autoplay playsinline muted></video>
         </div>
@@ -131,13 +100,20 @@
     </div>
 
     <script>
+        // ==========================================
+        // 🛠️ [여기서 난이도를 조절하세요!]
+        // 1.0 = 보통 난이도 (기존보다 조금 더 웃어야 함)
+        // 1.5 = 매운맛 (눈 없어지고 입을 크게 벌려야 100점)
+        // 2.0 = 지옥맛 (광대가 터질 정도로 온 얼굴로 박장대소해야 100점)
+        // ==========================================
+        const DIFFICULTY_FACTOR = 1.6; 
+
         const video = document.getElementById("webcam");
         const scoreEl = document.getElementById("score-value");
         const progressBar = document.getElementById("progress");
         const statusEl = document.getElementById("status");
         const loader = document.getElementById("loader");
 
-        // 구버전 안정형 엔진 선언 (사파리 친화적 경로 설정)
         const faceMesh = new FaceMesh({
             locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`
         });
@@ -150,42 +126,44 @@
         });
 
         faceMesh.onResults((results) => {
-            // AI가 첫 얼굴을 찾아내면 로딩창 숨기기
             loader.style.display = "none";
 
             if (results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0) {
                 const landmarks = results.multiFaceLandmarks[0];
                 
-                // 입꼬리 좌우 좌표 및 눈가 좌표 추출을 통한 웃음 강도 계산
+                // 얼굴의 주요 좌표 추출
                 const mouthLeft = landmarks[61];
                 const mouthRight = landmarks[291];
                 const eyeLeft = landmarks[33];
                 const eyeRight = landmarks[263];
 
-                // 얼굴 거리에 상관없도록 눈 대 입 너비 비율 계산
+                // 입 너비와 눈 사이 거리 비율 계산 (얼굴이 다가와도 일정한 점수 유지)
                 const mouthWidth = Math.hypot(mouthLeft.x - mouthRight.x, mouthLeft.y - mouthRight.y);
                 const eyeDist = Math.hypot(eyeLeft.x - eyeRight.x, eyeLeft.y - eyeRight.y);
                 const smileRatio = mouthWidth / eyeDist;
 
-                // 점수 매핑 계산 (일반 미소 비율 기준 적용)
-                let score = Math.round(((smileRatio - 0.44) / 0.18) * 100);
+                // [난이도 알고리즘 적용]
+                // 기본 무표정 기준점을 0.46으로 높이고, 100점에 도달하는 범위를 난이도 인자로 대폭 넓혔습니다.
+                let score = Math.round(((smileRatio - 0.46) / (0.13 * DIFFICULTY_FACTOR)) * 100);
+                
                 if (score < 0) score = 0;
                 if (score > 100) score = 100;
 
                 scoreEl.innerText = score;
                 progressBar.style.width = `${score}%`;
 
-                if (score < 15) {
-                    statusEl.innerText = "무표정이에요. 조금만 웃어보세요! 😐";
+                // 점수별 멘트 변경
+                if (score < 20) {
+                    statusEl.innerText = "정색은 금지! 미소를 지어보세요 😐";
                     statusEl.style.color = "#a0a0b5";
-                } else if (score < 55) {
-                    statusEl.innerText = "좋아요, 미소가 시작되었습니다! 🙂";
+                } else if (score < 60) {
+                    statusEl.innerText = "더 크게 웃으셔야 점수가 올라갑니다! 🙂";
                     statusEl.style.color = "#ffb703";
-                } else if (score < 85) {
-                    statusEl.innerText = "아주 멋진 미소입니다! 조금 더 크게! 😀";
+                } else if (score < 95) {
+                    statusEl.innerText = "좋아요! 광대를 더 폭발시켜 보세요! 😀";
                     statusEl.style.color = "#1dd1a1";
                 } else {
-                    statusEl.innerText = "최고의 미소! 100점 만점! 🎉😁";
+                    statusEl.innerText = "인정합니다! 최고의 미소 100점! 🎉😁";
                     statusEl.style.color = "#1dd1a1";
                 }
             } else {
@@ -194,7 +172,6 @@
             }
         });
 
-        // 아이패드 전용 카메라 최적화 유틸 구동
         const camera = new Camera(video, {
             onFrame: async () => {
                 await faceMesh.send({ image: video });
@@ -202,9 +179,8 @@
             width: 640,
             height: 480
         });
-        
         camera.start().catch(err => {
-            alert("카메라를 켤 수 없습니다. 주소가 https:// 로 시작하는지 확인해주세요.");
+            alert("카메라를 켤 수 없습니다.");
         });
     </script>
 </body>
