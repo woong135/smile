@@ -13,30 +13,34 @@
         :root {
             --bg-color: #0d0d13;
             --card-bg: #161622;
-            --accent-color: #ff3e3e;
+            --accent-color: #ffb703;
             --text-main: #ffffff;
             --text-muted: #8e8e9f;
         }
         body {
-            margin: 0; padding: 0;
+            margin: 0; padding: 20px 0;
             background-color: var(--bg-color);
             color: var(--text-main);
             font-family: -apple-system, sans-serif;
             display: flex; flex-direction: column;
             align-items: center; justify-content: center;
             min-height: 100vh;
+            box-sizing: border-box;
         }
+        
+        /* 1. 카메라 확대를 위해 컨테이너 최대 크기를 650px로 대폭 확장 */
         .container {
             background: var(--card-bg);
             border-radius: 24px;
-            padding: 30px 24px;
-            width: 90%; max-width: 420px;
+            padding: 24px;
+            width: 95%; max-width: 650px;
             text-align: center;
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
-            border: 1px solid rgba(255, 62, 62, 0.1);
+            border: 1px solid rgba(255, 183, 3, 0.1);
+            box-sizing: border-box;
         }
-        h1 { color: #ffb703; margin: 0 0 8px 0; font-size: 1.8rem; }
-        .subtitle { color: #ff3e3e; font-size: 0.9rem; margin-bottom: 20px; font-weight: bold; }
+        h1 { color: var(--accent-color); margin: 0 0 4px 0; font-size: 1.8rem; }
+        .subtitle { color: #ff3e3e; font-size: 0.9rem; margin-bottom: 16px; font-weight: bold; }
         
         .video-wrapper {
             position: relative; width: 100%; aspect-ratio: 4/3;
@@ -51,24 +55,23 @@
         }
         .spinner {
             width: 40px; height: 40px;
-            border: 4px solid rgba(255, 62, 62, 0.1);
+            border: 4px solid rgba(255, 183, 3, 0.1);
             border-top: 4px solid var(--accent-color);
             border-radius: 50%;
             animation: spin 1s linear infinite; margin-bottom: 15px;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         
-        /* 점수판 레이아웃 (현재 점수 vs 최고 기록) */
         .score-display-container {
             display: flex;
             justify-content: space-between;
             gap: 12px;
-            margin-top: 20px;
+            margin-top: 16px;
         }
         .score-box {
             flex: 1;
             background: rgba(0, 0, 0, 0.4);
-            padding: 10px 15px;
+            padding: 12px 8px;
             border-radius: 16px;
             border: 1px solid rgba(255, 255, 255, 0.05);
             display: flex;
@@ -79,64 +82,53 @@
             border: 1px solid rgba(255, 183, 3, 0.4);
             background: rgba(255, 183, 3, 0.05);
         }
-        .score-label {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-            margin-bottom: 4px;
+        .score-label { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 4px; }
+        .score-box.highlight .score-label { color: var(--accent-color); font-weight: bold; }
+        
+        /* 3자리 점수(999점) 표기를 위해 폰트 굵기 강화 및 고정폭 설정 */
+        .score-number { 
+            font-size: 2.8rem; 
+            font-weight: 900; 
+            color: #ffffff;
+            font-variant-numeric: tabular-nums; 
         }
-        .score-box.highlight .score-label {
-            color: #ffb703;
-            font-weight: bold;
-        }
-        .score-number { font-size: 2.3rem; font-weight: 900; color: #ffffff; }
-        .score-unit { font-size: 1.1rem; color: #ffb703; font-weight: 700; }
+        .score-unit { font-size: 1.2rem; color: var(--accent-color); font-weight: 700; }
         
         .gauge-container {
-            width: 100%; height: 12px; background: #1a1a26;
-            border-radius: 6px; margin: 20px auto 12px auto; overflow: hidden;
+            width: 100%; height: 14px; background: #1a1a26;
+            border-radius: 7px; margin: 16px auto 12px auto; overflow: hidden;
         }
         .gauge-bar {
             width: 0%; height: 100%;
             background: linear-gradient(90deg, #ff3e3e, #ffb703, #1dd1a1);
             transition: width 0.08s ease-out;
         }
-        .msg-display { font-size: 0.95rem; font-weight: 700; height: 26px; color: var(--text-muted); margin-bottom: 15px; }
+        .msg-display { font-size: 1rem; font-weight: 700; height: 26px; color: var(--text-muted); margin-bottom: 16px; }
         
-        /* 리셋 버튼 스타일 */
         .btn-reset {
-            width: 100%;
-            background: #ffb703;
-            color: #0d0d13;
-            border: none;
-            padding: 12px;
-            border-radius: 12px;
-            font-size: 1rem;
-            font-weight: bold;
-            cursor: pointer;
+            width: 100%; background: var(--accent-color); color: #0d0d13;
+            border: none; padding: 14px; border-radius: 12px;
+            font-size: 1.05rem; font-weight: bold; cursor: pointer;
             box-shadow: 0 4px 15px rgba(255, 183, 3, 0.3);
-            transition: background 0.2s;
-            -webkit-tap-highlight-color: transparent; /* 아이패드 터치 잔상 제거 */
+            transition: background 0.2s; -webkit-tap-highlight-color: transparent;
         }
-        .btn-reset:active {
-            background: #e09f00;
-        }
+        .btn-reset:active { background: #e09f00; }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <h1>웃음대회 챌린지 💀</h1>
-        <div class="subtitle">※ 경고: 3배 더 어려워진 신(God) 모드</div>
+        <h1>웃음대회 챌린지 👑</h1>
+        <div class="subtitle">🔥 신의 영역: 999점 만점 돌파 챌린지</div>
         
         <div class="video-wrapper">
             <div id="loader" class="overlay-loading">
                 <div class="spinner"></div>
-                <div style="font-size: 0.9rem; color: var(--text-muted);">초고정밀 AI 엔진 구동 중...</div>
+                <div style="font-size: 0.9rem; color: var(--text-muted);">대화면 초정밀 AI 엔진 구동 중...</div>
             </div>
             <video id="webcam" autoplay playsinline muted></video>
         </div>
 
-        <!-- 듀얼 점수판 영역 -->
         <div class="score-display-container">
             <div class="score-box">
                 <span class="score-label">실시간 점수</span>
@@ -160,8 +152,7 @@
 
         <div class="msg-display" id="status">카메라 준비 중...</div>
 
-        <!-- 다음 사람을 위한 리셋 버튼 -->
-        <button class="btn-reset" id="btn-next">다음 사람 시작하기 🔄</button>
+        <button class="btn-reset" id="btn-next">다음 도전자 시작하기 🔄</button>
     </div>
 
     <script>
@@ -173,7 +164,7 @@
         const loader = document.getElementById("loader");
         const nextBtn = document.getElementById("btn-next");
 
-        let maxScore = 0; // 현재 도전자의 최고 기록 저장 변수
+        let maxScore = 0;
 
         const faceMesh = new FaceMesh({
             locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`
@@ -201,39 +192,42 @@
                 const eyeDist = Math.hypot(eyeLeft.x - eyeRight.x, eyeLeft.y - eyeRight.y);
                 const smileRatio = mouthWidth / eyeDist;
 
-                // 지옥의 3배 매운맛 알고리즘 유지 (4제곱)
-                let rawProgress = (smileRatio - 0.54) / 0.26; 
+                // =======================================================
+                // 💀 [999점 만점 5제곱 극악 알고리즘]
+                // 1. 최소 컷트라인 0.55로 초상향 (살짝 웃으면 아예 무반응)
+                // 2. 진행도를 5제곱하여 999점을 곱해 점수 산출
+                // =======================================================
+                let rawProgress = (smileRatio - 0.55) / 0.25; 
                 
                 if (rawProgress < 0) rawProgress = 0;
                 if (rawProgress > 1) rawProgress = 1;
 
-                let score = Math.round(Math.pow(rawProgress, 4) * 100);
+                // 5제곱 연산 후 999점 만점으로 팽창
+                let score = Math.round(Math.pow(rawProgress, 5) * 999);
 
-                // 1. 실시간 점수 표기
                 scoreEl.innerText = score;
-                progressBar.style.width = `${score}%`;
+                progressBar.style.width = `${(score / 999) * 100}%`;
 
-                // 2. 최고 기록 갱신 로직 (역대급 기록 박제)
                 if (score > maxScore) {
                     maxScore = score;
                     maxScoreEl.innerText = maxScore;
                 }
 
-                // 멘트 기준은 '최고 기록'이 아닌 '실시간 표정 강도' 기준
-                if (score < 5) {
-                    statusEl.innerText = "그건 미소일 뿐입니다. 0점! 😐";
+                // 999점 기준 난이도별 멘트 배정
+                if (score < 50) {
+                    statusEl.innerText = "어설픈 미소는 0점 처리됩니다! 😐";
                     statusEl.style.color = "#8e8e9f";
-                } else if (score < 30) {
-                    statusEl.innerText = "얼굴 근육을 더 쓰셔야 반응합니다! 🙂";
+                } else if (score < 350) {
+                    statusEl.innerText = "겨우 300점 대? 얼굴 근육을 대폭 쓰세요! 🙂";
                     statusEl.style.color = "#ff3e3e";
-                } else if (score < 75) {
-                    statusEl.innerText = "무너지세요! 더 망가져야 오릅니다! 😀";
+                } else if (score < 750) {
+                    statusEl.innerText = "좋습니다! 더 격렬하게 망가지세요! 😀";
                     statusEl.style.color = "#ffb703";
-                } else if (score < 99) {
-                    statusEl.innerText = "거의 다 왔습니다! 온 힘을 다해 박장대소!! 😆";
+                } else if (score < 990) {
+                    statusEl.innerText = "대박! 조금만 더! 온 우주의 기운을 모아 박장대소!! 😆";
                     statusEl.style.color = "#1dd1a1";
                 } else {
-                    statusEl.innerText = "기적 발생! 신의 미소 100점 쟁취! 🎉👑";
+                    statusEl.innerText = "신화 창조! 전설의 999점 만점 격파! 🎉👑";
                     statusEl.style.color = "#1dd1a1";
                 }
             } else {
@@ -242,13 +236,12 @@
             }
         });
 
-        // 다음 사람을 위해 최고점수 초기화 버튼 이벤트
         nextBtn.addEventListener("click", () => {
             maxScore = 0;
             maxScoreEl.innerText = "0";
             scoreEl.innerText = "0";
             progressBar.style.width = "0%";
-            statusEl.innerText = "새로운 도전자! 준비하시고 웃으세요!";
+            statusEl.innerText = "새로운 도전자! 999점에 도전하세요!";
             statusEl.style.color = "#ffb703";
         });
 
